@@ -15,3 +15,6 @@
 
 # Idea
 .idea/*
+
+# Ignore the config file
+config.json
