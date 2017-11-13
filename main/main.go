@@ -12,7 +12,7 @@ func main() {
 	backUp := backup.Backup{}
 
 	// Do the first backup right at program start
-	backUp.LoadConfig(configPath)
+	backUp.CreateOrLoadConfig(configPath)
 	backUp.CheckChanged()
 
 	// Then after the initial backup begin doing a backup every X number of hours

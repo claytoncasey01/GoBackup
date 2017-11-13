@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -104,6 +105,15 @@ func (b *Backup) toString() string {
 	return toJSON(b)
 }
 
+// CreateConfig will create the configuration file based on the Backup struct
+func (b *Backup) CreateConfig(path string) {
+	outputJSON, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ioutil.WriteFile(path, outputJSON, os.ModePerm)
+}
+
 // LoadConfig will handle loading up the given config file
 func (b *Backup) LoadConfig(path string) {
 	raw, err := ioutil.ReadFile(path)
@@ -113,6 +123,36 @@ func (b *Backup) LoadConfig(path string) {
 	}
 
 	json.Unmarshal(raw, &b)
+}
+
+// CreateOrLoadConfig will first check to see if the config file exists in the
+// given path, if not it will create it, otherwise it will load it.
+func (b *Backup) CreateOrLoadConfig(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Setup some place holders
+		b.SourcePath = "Source Root Directory Path"
+		b.BackupPath = "Backup Root Directory Path"
+		b.TimeBetweenBackups = 24
+		// Create the config file
+		b.CreateConfig(path)
+		// Get the current path that the Executable is running at
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex) + "\\config.json"
+		// Open a command prompt and echo a message to let the user know that
+		// the config.json file should be updated.
+		cmd := "cmd"
+		args := []string{"/C", "start", "C:\\Windows\\System32\\cmd.exe", "/k",
+			"echo Please update " + exPath + " and re-run the program!"}
+		if err := exec.Command(cmd, args...).Run(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		os.Exit(1)
+	} else {
+		b.LoadConfig(path)
+	}
 }
 
 // Copy file from one directory to another
