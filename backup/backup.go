@@ -13,8 +13,6 @@ import (
 	"path/filepath"
 )
 
-var sourcePaths = []string{}
-
 // Backup is used to represent the current backup configuration
 type Backup struct {
 	SourcePath         string `json:"sourcePath"`
@@ -25,30 +23,8 @@ type Backup struct {
 // CheckChanged walks the directory to be backed up and figure out what
 // files have been hanged and store those off.
 func (b *Backup) CheckChanged() {
-	filepath.Walk(b.SourcePath, visitSource)
-
-	for _, path := range sourcePaths {
-		backupPath := b.BackupPath + path[len(b.SourcePath):]
-		// If the given directory/file does not currently exist then we create
-		// or copy it, if it does then only copy it if the MD5 checksum is
-		// different from the source file.
-		if _, err := os.Stat(backupPath); os.IsNotExist(err) {
-			// If the current path element in the source is a directory then
-			// create a directory in the backup path, otherwise copy the file
-			// from the source path to the backup path.
-			if stat, _ := os.Stat(path); stat.IsDir() {
-				os.Mkdir(backupPath, os.ModePerm)
-			} else {
-				b.Copy(path, backupPath)
-			}
-		} else {
-			if stat, _ := os.Stat(path); !stat.IsDir() {
-				if !b.FileChecksum(path, backupPath) {
-					b.Copy(path, backupPath)
-				}
-			}
-		}
-	}
+	// Walk the source directory and create the backups.
+	filepath.Walk(b.SourcePath, walkSource(b))
 }
 
 // FileChecksum Takes the sourceFile and the backedUp version of the file and
@@ -186,8 +162,30 @@ func toJSON(b interface{}) string {
 	return string(bytes)
 }
 
-func visitSource(path string, f os.FileInfo, err error) error {
-	sourcePaths = append(sourcePaths, path)
+func walkSource(b *Backup) filepath.WalkFunc {
+	return func(path string, f os.FileInfo, err error) error {
+		backupPath := b.BackupPath + path[len(b.SourcePath):]
+		// If the given directory/file does not currently exist then we create
+		// or copy it, if it does then only copy it if the MD5 checksum is
+		// different from the source file.
+		if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+			// If the current path element in the source is a directory then
+			// create a directory in the backup path, otherwise copy the file
+			// from the source path to the backup path.
+			if stat, _ := os.Stat(path); stat.IsDir() {
+				os.Mkdir(backupPath, os.ModePerm)
+			} else {
+				b.Copy(path, backupPath)
+			}
+		} else {
+			if stat, _ := os.Stat(path); !stat.IsDir() {
+				if !b.FileChecksum(path, backupPath) {
+					b.Copy(path, backupPath)
+				}
+			}
+		}
 
-	return nil
+		return nil
+	}
+
 }
