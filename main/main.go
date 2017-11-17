@@ -9,7 +9,7 @@ const configPath = "./config.json"
 
 func main() {
 	// Load up the config file so we know where to backup to.
-	backUp := backup.Backup{}
+	backUp := backup.NewBackup()
 
 	// Do the first backup right at program start
 	backUp.CreateOrLoadConfig(configPath)
@@ -17,7 +17,7 @@ func main() {
 
 	// Then after the initial backup begin doing a backup every X number of hours
 	ticker := time.NewTicker(time.Duration(backUp.TimeBetweenBackups) * time.Hour)
-	start(ticker, &backUp)
+	start(ticker, backUp)
 
 }
 

@@ -20,6 +20,11 @@ type Backup struct {
 	TimeBetweenBackups int    `json:"timeBetweenBackups"`
 }
 
+// NewBackup creates an empty Backup struct pointer
+func NewBackup() *Backup {
+	return &Backup{}
+}
+
 // CheckChanged walks the directory to be backed up and figure out what
 // files have been hanged and store those off.
 func (b *Backup) CheckChanged() {
